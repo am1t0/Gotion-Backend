@@ -1,0 +1,115 @@
+import { asyncHandler } from '../utils/asyncHandler.js';
+import ApiError from '../utils/ApiError.js';
+import { Team } from '../modals/team.modal.js';
+import ApiResponse from '../utils/ApiResponse.js';
+import User from '../modals/user.modal.js';
+import { Project } from '../modals/project.modal.js'; 
+import { Task } from '../modals/tasks.modal.js';
+
+
+const createProject = asyncHandler(async (req, res) => {
+  try {
+    // taking details regarding project 
+    const { name, details, teamId } = req.body;
+
+    // Check if the user is the owner of the specified team
+    const team = await Team.findById(teamId);
+    if (!team || team.owner.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Forbidden: User does not have permission' });
+    }
+
+    // Create a new project document
+    const newProject = new Project({
+      name,
+      details,
+      team: teamId,
+      announcements: [],
+      tasks: [],
+    });
+
+    // Save the new project to the database
+    const savedProject = await newProject.save();
+
+    // adding the project into it's team
+    team.projects.push(savedProject._id);
+    await team.save();
+
+    res.status(201).json(savedProject);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+const addTaskToProject = asyncHandler(async (req, res) => {
+  const { projectId } = req.params;
+  const { taskName, description, username, status, deadline } = req.body;
+
+  // Validate required fields
+  if (!taskName || !description || !username || !status || !deadline) {
+    return res.status(400).json({ success: false, message: "All fields are required" });
+  }
+
+  try {
+    // For simplicity, assuming username is unique
+    // You may want to add additional validation or fetch user ID based on the username
+    const user = await User.findOne({ username });
+
+    // user exists or not 
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // 
+    const project = await Project.findById(projectId)
+
+    if (!project) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+
+    const teamId = project.team;
+
+    const team = await Team.findById(teamId);
+
+    if(team.owner.toString() !== req.user._id.toString()){
+      return  res.status(401).json({ success: false, message: "Unauthorized!" });
+    }
+
+
+    if (!team) {
+      return res.status(403).json({ success: false, message: "Project does not have an associated team" });
+    }
+    
+    // Create a new task instance
+    const newTask = new Task({
+      taskName,
+      description,
+      member: user._id, // Assign the user ID to the task
+      status,
+      deadline,
+    });
+
+    // Save the new task to the database
+    const savedTask = await newTask.save();
+
+    // For simplicity, assuming projectId is valid
+    const updatedProject = await Project.findByIdAndUpdate(
+      projectId,
+      { $push: { tasks: savedTask._id } },
+      { new: true }
+    );
+
+    return res.status(201).json({
+      success: true,
+      project: updatedProject,
+      task: savedTask,
+    });
+  } catch (error) {
+    console.error("Error adding task to project:", error.message);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+});
+
+
+export { createProject ,addTaskToProject};
