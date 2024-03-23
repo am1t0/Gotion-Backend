@@ -10,7 +10,6 @@ const generateAccessAndRefreshTokens = async (userId) => {
         const user = await User.findById(userId);
         const accessToken = user.generateAccessToken();
         const refreshToken = user.generateRefreshToken();
-        console.log(refreshToken);
         user.refreshToken = refreshToken;
         await user.save({ validateBeforeSave: false });
 
@@ -24,12 +23,12 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
 const registerUser = asyncHandler(async (req, res) => {
     // get user details from frontend
-    const { fullname, email, username, password } = req.body;
+    const { fullname, email, username, password ,gitToken } = req.body;
    
 
     // validation - not empty
     if (
-        [fullname, email, username, password].some((field) =>
+        [fullname, email, username, password,gitToken].some((field) =>
             field?.trim() === "")
     ) {
         throw new ApiError(400, "All fields are required");
@@ -49,11 +48,13 @@ const registerUser = asyncHandler(async (req, res) => {
         fullname,
         email,
         password,
-        username: username.toLowerCase()
+        username: username.toLowerCase(),
+        gitToken
     })
 
     // add refresh token
-    await generateAccessAndRefreshTokens(user._id);
+    const {accessToken} = await generateAccessAndRefreshTokens(user._id);
+    console.log("This is accessToken :",accessToken);
 
     // remove password and refresh token from response and
     // check user created or not 
@@ -67,18 +68,15 @@ const registerUser = asyncHandler(async (req, res) => {
     // check for user creation 
     // return response
     return res.status(201).json(
-        new ApiResponse(201, createdUser, "User registered Successfully")
+        new ApiResponse(201, {user: createdUser,accessToken}, "User registered Successfully")
     )
-
-
-
 
 })
 
 const loginUser = asyncHandler(async (req, res) => {
 
     // first take input form user , username or email, password
-    const { username, email, password } = req.body;
+    const { username, email, password} = req.body;
 
     if (!username && !password) {
         throw new ApiError(400, "username or email is required")
@@ -95,7 +93,7 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 
     // password check 
-    const isPasswordValid = await user.isPasswordCorrect;
+    const isPasswordValid = await user.isPasswordCorrect(password);
 
     if (!isPasswordValid) {
         throw new ApiError(401, "Invalid user credentials")
@@ -214,5 +212,41 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 })
 
+const getUserData = asyncHandler(async (req, res) => {
+    try {
+        const userId = req.user._id; // Assuming the user ID is available in req.user
 
-export { registerUser, loginUser, logoutUser,refreshAccessToken }
+        // Fetch user data from the database
+        const user = await User.findById(userId).select("-password -refreshToken");
+
+        if (!user) {
+            throw new ApiError(404, "User not found");
+        }
+
+        // Return the user data in the response
+        return res.status(200).json(new ApiResponse(200, user, "User data retrieved successfully"));
+    } catch (error) {
+        console.error(error);
+        throw new ApiError(500, "Something went wrong while fetching user data");
+    }
+});
+
+const getGitToken = asyncHandler(async (req,res) => {
+     const {userId} = req.params;
+
+     try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const { gitToken } = user;
+    return res.status(200).json(new ApiResponse(200, {gitToken}, "User data retrieved successfully"));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+})
+
+export { registerUser, loginUser, logoutUser,refreshAccessToken ,getUserData,getGitToken}

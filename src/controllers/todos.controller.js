@@ -42,6 +42,11 @@ const getTodosByUser = asyncHandler(async (req, res) => {
     // Fetch all todos for the user
     const todos = await Todo.find({ createdBy });
 
+    if(!todos){
+      console.log("Empty");
+      return ;
+    }
+
     return res.status(200).json(
       new ApiResponse(200, todos, "Todos Retrieved Successfully")
     );

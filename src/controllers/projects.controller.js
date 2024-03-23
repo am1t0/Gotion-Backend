@@ -10,7 +10,11 @@ import { Task } from '../modals/tasks.modal.js';
 const createProject = asyncHandler(async (req, res) => {
   try {
     // taking details regarding project 
-    const { name, details, teamId } = req.body;
+    const { name, details, teamId} = req.body;
+
+    console.log('name :',name);
+    console.log('details :',details);
+    console.log('teamId :',);
 
     // Check if the user is the owner of the specified team
     const team = await Team.findById(teamId);
@@ -25,6 +29,7 @@ const createProject = asyncHandler(async (req, res) => {
       team: teamId,
       announcements: [],
       tasks: [],
+      repoInitialized:true,
     });
 
     // Save the new project to the database
@@ -34,7 +39,7 @@ const createProject = asyncHandler(async (req, res) => {
     team.projects.push(savedProject._id);
     await team.save();
 
-    res.status(201).json(savedProject);
+    return res.status(200).json(new ApiResponse(200,savedProject, 'Projects created successfully'));
 
   } catch (error) {
     console.error(error);
@@ -111,5 +116,60 @@ const addTaskToProject = asyncHandler(async (req, res) => {
   }
 });
 
+const repoCheck = asyncHandler(async (req, res) => {
+  try {
+    const { repoName, owner, projectId } = req.body;
 
-export { createProject ,addTaskToProject};
+    if (!repoName || !projectId || !owner) {
+      return res.status(400).json({ message: 'Invalid request. Missing or empty parameters.' });
+    }
+
+    // Assuming you have a project model
+    const project = await Project.findById(projectId);
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // Update the project details with repoName and owner
+    project.repo = {
+      repoName: repoName,
+      owner: owner,
+    };
+
+    console.log('Project after repo Details is : ',project);
+
+    // Update the project to indicate that the repository has been initialized
+    project.repoInitialized = true;
+
+    await project.save();
+
+    res.status(201).json({ message: 'Repository created and project updated' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+const getProject = asyncHandler(async (req, res) => {
+  const { projectId } = req.params;
+
+  try {
+    const project = await Project.findById(projectId);
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    res.status(200).json({ project });
+    
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+
+
+
+export { createProject ,addTaskToProject,repoCheck,getProject};

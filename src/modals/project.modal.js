@@ -18,7 +18,21 @@ const projectSchema = new mongoose.Schema({
       type: Date,
     },
   },
-  anouncements:[],
+    repo: {
+      repoName: {
+        type: String,
+        required: false,
+      },
+      owner: {
+        type: String,
+        required: false,
+      },
+  },
+  repoInitialized: {
+    type: Boolean,
+    default: false,
+  },
+  announcements: [],
 
   tasks: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -29,6 +43,7 @@ const projectSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Team",
   },
+ 
 }, { timestamps: true });
 
 const Project = mongoose.model("Project", projectSchema);

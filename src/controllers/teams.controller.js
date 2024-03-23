@@ -3,6 +3,7 @@ import ApiError from '../utils/ApiError.js';
 import { Team } from '../modals/team.modal.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import User from '../modals/user.modal.js'
+import {Project} from '../modals/project.modal.js';
 
 // creating the team
 const createTeam =  asyncHandler(async (req, res) => {
@@ -26,6 +27,60 @@ const createTeam =  asyncHandler(async (req, res) => {
     }
   });
 
+  const deleteTeam = asyncHandler(async (req, res) => {
+    try {
+      const teamId = req.params.teamId;
+      const userId = req.user._id; // Assuming user information is available in the request after authentication
+  
+      // Check if the user requesting the deletion is the owner of the team
+      const team = await Team.findById(teamId);
+      if (!team) {
+        return res.status(404).json({ error: 'Team not found' });
+      }
+      console.log('User making the request : ', req.user._id);
+      if (team.owner.toString() !== userId.toString()) {
+        return res.status(403).json({ error: 'You do not have permission to delete this team' });
+      }
+      
+      // Delete the team and send a success response
+      await Team.deleteOne({ _id: teamId });
+      return res.status(200).json(new ApiResponse(200,'Delete Happened', "Team deleted successfully"));
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
+  // get all the projects
+  const getProjects = asyncHandler(async (req, res) => {
+    try {
+        const {teamId} =  req.params;
+    
+        const team = await Team.findById(teamId);
+  
+      if (!team) {
+        return res.status(404).json({ error: 'Team not found' });
+      }
+     
+      // Populate the projects array to get project details
+      //await team.populate('projects').execPopulate();
+  
+      // Extract relevant project details for response
+      const projects = await Promise.all(team.projects.map(async (projectId) => {
+        const projectDetails = await Project.findById(projectId);
+        return {
+          _id: projectDetails._id,
+          name: projectDetails.name,
+          details: projectDetails.details,
+          // Include other relevant project properties here
+        };
+      }));
+      return res.status(200).json(new ApiResponse(200, projects, 'Projects retrieved successfully'));
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
 // Update Team Details
 const updateTeam = asyncHandler(async (req, res) => {
   try {
@@ -63,8 +118,10 @@ const updateTeam = asyncHandler(async (req, res) => {
 // Add Member to Team
 const addMemberToTeam = asyncHandler(async (req, res) => {
   try {
-    const { teamId, memberId } = req.body;
+    const { teamId, username } = req.body;
 
+     console.log("teamId : ",teamId);
+     console.log("username : ",username);
     // Check if the team exists
     const team = await Team.findById(teamId);
     if (!team) {
@@ -77,21 +134,21 @@ const addMemberToTeam = asyncHandler(async (req, res) => {
     }
 
     // Check if the member user exists
-    const memberUser = await User.findById(memberId);
+    const memberUser = await User.findOne({username});
     if (!memberUser) {
       throw new ApiError(404, 'Member user not found');
     }
 
     // Check if the member is already a part of the team
-    if (team.members.includes(memberId)) {
+    if (team.members.includes(memberUser._id)) {
       throw new ApiError(400, 'Member is already part of the team');
     }
 
     // Add the member to the team
-    team.members.push(memberId);
+    team.members.push(memberUser._id);
     await team.save();
 
-    return res.status(200).json(new ApiResponse(200, team, 'Member added to the team successfully'));
+    return res.status(200).json(new ApiResponse(200, memberUser, 'Member added to the team successfully'));
   } catch (error) {
     console.error(error);
 
@@ -161,6 +218,38 @@ const getTeamsForUser = asyncHandler( async (req, res) => {
   }
 });
 
+// Get all member's details from team 
+const getAllmembers = asyncHandler( async (req,res) => {
+  try{
+         const {teamId} = req.params;
 
-export {createTeam,addMemberToTeam ,removeMemberFromTeam ,getTeamsForUser,updateTeam};
+         const team = await Team.findById(teamId);
+
+         
+         if (!team) {
+      throw new ApiError(404, 'Team not found');
+    }
+    
+    // now team members will be present as array containing id's of them
+    const membersPromises =  await team.members.map(async (memberId)=>{ 
+        const user = await  User.findById(memberId);
+
+        const { password, refreshToken, ...userData } = user.toObject(); // Convert Mongoose document to plain object
+        return userData;
+    })
+
+    const members = await Promise.all(membersPromises);
+
+    return res.status(200).json(new ApiResponse(200,members, "Team members fetched successfully"));
+    
+   }
+   catch(error){
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+   }
+})
+
+
+
+export {createTeam,addMemberToTeam ,removeMemberFromTeam ,getTeamsForUser,updateTeam,getProjects,deleteTeam,getAllmembers};
   
