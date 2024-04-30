@@ -5,20 +5,19 @@ const projectSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  details: {
-    description: {
-      type: String,
-      required: true,
-    },
-    startDate: {
-      type: Date,
-      required: true,
-    },
-    endDate: {
-      type: Date,
-    },
+  projectOverview: {
+    type: String,
+    required: true,
   },
-    repo: {
+  projectObjectives:{
+    type: [String], 
+    required: true,
+  },
+  techStack:{
+    type: [String], 
+    required: true,
+  },
+  repo: {
       repoName: {
         type: String,
         required: false,
@@ -32,7 +31,10 @@ const projectSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  announcements: [],
+  announcements: {
+    type: [String], 
+    required: false,
+  },
 
   tasks: [{
     type: mongoose.Schema.Types.ObjectId,

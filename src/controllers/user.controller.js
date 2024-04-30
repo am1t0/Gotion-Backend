@@ -23,10 +23,14 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
 const registerUser = asyncHandler(async (req, res) => {
     // get user details from frontend
-    const { fullname, email, username, password ,gitToken } = req.body;
+    const { fullname, email, skills, username, password ,gitToken } = req.body;
    
 
     // validation - not empty
+    if(skills.length==0)
+    throw new ApiError(400, "All fields are required");
+
+    
     if (
         [fullname, email, username, password,gitToken].some((field) =>
             field?.trim() === "")
@@ -43,10 +47,12 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 
     // create user object - create entry in db
+    console.log('skills of this guy are : '+ skills);
 
     const user = await User.create({
         fullname,
         email,
+        skills,
         password,
         username: username.toLowerCase(),
         gitToken

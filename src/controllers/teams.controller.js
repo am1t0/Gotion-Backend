@@ -68,12 +68,7 @@ const createTeam =  asyncHandler(async (req, res) => {
       // Extract relevant project details for response
       const projects = await Promise.all(team.projects.map(async (projectId) => {
         const projectDetails = await Project.findById(projectId);
-        return {
-          _id: projectDetails._id,
-          name: projectDetails.name,
-          details: projectDetails.details,
-          // Include other relevant project properties here
-        };
+        return projectDetails;
       }));
       return res.status(200).json(new ApiResponse(200, projects, 'Projects retrieved successfully'));
     } catch (error) {
@@ -249,7 +244,26 @@ const getAllmembers = asyncHandler( async (req,res) => {
    }
 })
 
+const getCurrentTeam = asyncHandler(async (req, res) => {
+  try {
+    const {teamId} = req.params; // Assuming teamId is passed in the request parameters
+
+    // Find team by team ID
+    const team = await Team.findById(teamId);
+
+    // Check if team exists
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found' });
+    }
+
+    return res.status(200).json(new ApiResponse(200, team, 'Team details retrieved successfully'));
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 
-export {createTeam,addMemberToTeam ,removeMemberFromTeam ,getTeamsForUser,updateTeam,getProjects,deleteTeam,getAllmembers};
+
+export {createTeam,addMemberToTeam ,getCurrentTeam,removeMemberFromTeam ,getTeamsForUser,updateTeam,getProjects,deleteTeam,getAllmembers};
   

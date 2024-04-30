@@ -10,11 +10,7 @@ import { Task } from '../modals/tasks.modal.js';
 const createProject = asyncHandler(async (req, res) => {
   try {
     // taking details regarding project 
-    const { name, details, teamId} = req.body;
-
-    console.log('name :',name);
-    console.log('details :',details);
-    console.log('teamId :',);
+    const { name,projectOverview, projectObjectives, techStack,teamId} = req.body;
 
     // Check if the user is the owner of the specified team
     const team = await Team.findById(teamId);
@@ -25,12 +21,15 @@ const createProject = asyncHandler(async (req, res) => {
     // Create a new project document
     const newProject = new Project({
       name,
-      details,
+      projectOverview,
+      projectObjectives,
+      techStack,
       team: teamId,
       announcements: [],
       tasks: [],
       repoInitialized:true,
     });
+    console.log('Project is ',projectOverview);
 
     // Save the new project to the database
     const savedProject = await newProject.save();
@@ -169,7 +168,27 @@ const getProject = asyncHandler(async (req, res) => {
   }
 });
 
+const getCurrentProject = asyncHandler(async (req, res) => {
+  try {
+    const {projectId} = req.params;
+
+    // Find project by project ID
+    const project = await Project.findById(projectId);
+
+    // Check if team exists
+    if (!project) {
+      return res.status(404).json({ error: 'Team not found' });
+    }
+
+    return res.status(200).json(new ApiResponse(200, project, 'Team details retrieved successfully'));
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 
 
-export { createProject ,addTaskToProject,repoCheck,getProject};
+
+
+export { createProject ,getCurrentProject,addTaskToProject,repoCheck,getProject};

@@ -20,6 +20,11 @@ const userSchema = new mongoose.Schema(
             lowercase: true,
             trim: true,
         },
+        skills:{
+             type: [String],
+             required:true,
+             trim: true,
+        },
         fullname:{
             type: String,
             required: true,
