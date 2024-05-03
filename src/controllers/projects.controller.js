@@ -177,10 +177,10 @@ const getCurrentProject = asyncHandler(async (req, res) => {
 
     // Check if team exists
     if (!project) {
-      return res.status(404).json({ error: 'Team not found' });
+      return res.status(404).json({ error: 'Project not found' });
     }
 
-    return res.status(200).json(new ApiResponse(200, project, 'Team details retrieved successfully'));
+    return res.status(200).json(new ApiResponse(200, project, 'Project details retrieved successfully'));
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'Internal Server Error' });
