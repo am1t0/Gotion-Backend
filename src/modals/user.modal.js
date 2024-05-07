@@ -40,6 +40,26 @@ const userSchema = new mongoose.Schema(
             required: true
         },
 
+        // other details filled during profile creation
+        phone:{
+             type:String,
+        },
+        address:{
+             type: String,
+        },
+        collegName:{
+             type:String,
+        },
+        collegeAddress:{
+            type: String
+        } ,
+        githubProfile:{
+            type:String,
+        },
+        linkedinProfile:{
+            type:String,
+        } ,   
+
         refreshToken:{
             type:String
         },

@@ -255,4 +255,36 @@ const getGitToken = asyncHandler(async (req,res) => {
   }
 })
 
-export { registerUser, loginUser, logoutUser,refreshAccessToken ,getUserData,getGitToken}
+const updateUser = asyncHandler(async (req, res) => {
+    const {username} = req.params;
+    const { name, phone, address, collgN, collgA, github, linkedin } = req.body;
+
+    try {
+        const user = await User.findOne({ username }); // Find the user by ID
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Update the user's properties with the values provided in the request body
+        if (name) user.fullname = name;
+        if (phone) user.phone = phone;
+        if (address) user.address = address;
+        if (collgN) user.collegName = collgN;
+        if (collgA) user. collegeAddress= collgA;
+        if (github) user.githubProfile = github;
+        if (linkedin) user.linkedinProfile = linkedin;
+
+        // Save the updated user object back to the database
+        await user.save();
+
+        return res.status(200).json(new ApiResponse(200, {user}, "User data retrieved successfully"));
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+
+
+export { registerUser, updateUser,loginUser, logoutUser,refreshAccessToken ,getUserData,getGitToken}
