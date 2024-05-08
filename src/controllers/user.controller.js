@@ -2,6 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import ApiError from '../utils/ApiError.js'
 import User from '../modals/user.modal.js'
 import ApiResponse from "../utils/ApiResponse.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from 'jsonwebtoken'
 
 // generating the tokens on 
@@ -285,6 +286,32 @@ const updateUser = asyncHandler(async (req, res) => {
     }
 });
 
+const uploadPhoto = asyncHandler(async (req,res) => {
+    try {
+        const {username} = req.params;
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        // Assuming the file is stored in req.file.path by multer
+        const localFilePath = req.file.path;
+
+        // Upload file to Cloudinary
+        const cloudinaryResponse = await uploadOnCloudinary(localFilePath);
+
+        if (!cloudinaryResponse) {
+            return res.status(500).json({ error: 'Failed to upload file to Cloudinary' });
+        }
+      await User.findOneAndUpdate({ username }, { profile: cloudinaryResponse.url });
+
+        res.status(200).json({ url: cloudinaryResponse.url });
+    } catch (error) {
+        console.error('Error uploading file:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+})
 
 
-export { registerUser, updateUser,loginUser, logoutUser,refreshAccessToken ,getUserData,getGitToken}
+
+export { registerUser, updateUser,loginUser, logoutUser,refreshAccessToken ,getUserData,getGitToken,uploadPhoto}
