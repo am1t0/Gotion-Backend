@@ -17,9 +17,11 @@ const createProject = asyncHandler(async (req, res) => {
     if (!team || team.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ error: 'Forbidden: User does not have permission' });
     }
+    const owner = req.user._id;
 
     // Create a new project document
     const newProject = new Project({
+      owner,
       name,
       projectOverview,
       projectObjectives,

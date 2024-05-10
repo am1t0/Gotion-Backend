@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const taskSchema = new mongoose.Schema({
-    taskName: {
+    name: {
         type: String,
         required: true,
     },
@@ -9,18 +9,22 @@ const taskSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    member: {
+    assignee: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
     },
     status: {
         type: String,
-        enum: ["Not Started", "In Progress", "Completed"],
-        default: "Not Started",
+         required: true,
     },
-    deadline: {
-        type: Date,
+    due: {
+        type: String,
+        required:true,
     },
+    priority:{
+        type: String,
+        required: true,
+    }
 
 }, { timestamps: true });
 

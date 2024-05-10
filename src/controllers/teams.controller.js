@@ -10,8 +10,8 @@ const createTeam =  asyncHandler(async (req, res) => {
 
     try {
       const { name,description } = req.body;
-      const owner = req.user._id; // Assuming user information is available in the request after authentication
-  
+      const owner = req.user._id; 
+      
       const newTeam = await Team.create({
         name,
         description,

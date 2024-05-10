@@ -9,9 +9,11 @@ import userRouter from './routes/user.routes.js'
 import todosRouter from './routes/todos.routes.js'
 import teamsRouter from './routes/teams.routes.js'
 import projectsRouter from './routes/projects.route.js'
+import tasksRouter from './routes/tasksRouter.js'
 
 
 const app = express();
+
 
 app.use(cors({
     origin: process.env.CORS_ORIGIN,
@@ -33,12 +35,7 @@ app.use('/api/v1/teams',teamsRouter);
 
 app.use('/api/v1/projects',projectsRouter);
 
-//http://localhost:4000/api/v1/users/register
+app.use('/api/v1/tasks',tasksRouter);
 
-
-//  routes declaration
-//  app.use("/api/v1/users", userRouter)  // versions btana achi practice
-
-//http://localhost:8000/api/v1/users/register
 
 export default app;
