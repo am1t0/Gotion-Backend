@@ -4,6 +4,7 @@ import { Task } from '../modals/tasks.modal.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import User from '../modals/user.modal.js'
 import {Project} from '../modals/project.modal.js';
+import { ObjectId } from 'mongoose';
 
 const createTask = asyncHandler(async (req, res) => {
     try {
@@ -43,6 +44,8 @@ const createTask = asyncHandler(async (req, res) => {
   
       // Save the updated project
       await project.save();
+
+      await newTask.populate('assignee');
   
       // Return success response
       return res.status(201).json(new ApiResponse(201, newTask, 'Task created successfully'));
@@ -82,7 +85,9 @@ const createTask = asyncHandler(async (req, res) => {
   
       // Save the updated task
       await task.save();
-  
+
+      await task.populate('assignee');
+
       // Return success response
       return res.status(200).json(new ApiResponse(200, task, 'Task updated successfully'));
     } catch (error) {
@@ -145,7 +150,7 @@ const createTask = asyncHandler(async (req, res) => {
       const taskIds = project.tasks;
   
       // Fetch tasks by IDs
-      const tasks = await Task.find({ _id: { $in: taskIds } });
+      const tasks = await Task.find({ _id: { $in: taskIds } }).populate('assignee');
   
       // Return success response with tasks
       return res.status(200).json(new ApiResponse(200, tasks, 'Tasks retrieved successfully'));
