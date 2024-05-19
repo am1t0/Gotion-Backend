@@ -45,7 +45,9 @@ const projectSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Task",
   }],
-
+  theme:{
+    type: String
+  },
   team: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Team",

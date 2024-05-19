@@ -1,0 +1,32 @@
+#define LP(i,a,b) for(int i=a;i<b;i++)
+#include <iostream>
+using namespace std;
+
+int main(){
+   
+    int n ;
+    cin>>n;
+
+    int arr[n];
+    int bnd = 0;
+
+    if(n%2==0) 
+      bnd = n-n/2;
+    else 
+      bnd = n-1-n/2; 
+
+    int e = 0;
+    int o =bnd;
+    LP(i,1,n+1){
+        if(i%2==0) arr[e++]= i;
+
+        else arr[o++]=i;
+    }
+
+    if(bnd-1>=0 && arr[bnd-1]-arr[bnd]==1) cout<<"NO SOLUTION"<<'\n';
+
+    else
+    LP(i,0,n) cout<<arr[i]<<" ";
+    
+    return 0;
+}

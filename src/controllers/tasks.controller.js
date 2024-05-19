@@ -5,6 +5,7 @@ import ApiResponse from '../utils/ApiResponse.js';
 import User from '../modals/user.modal.js'
 import {Project} from '../modals/project.modal.js';
 import { ObjectId } from 'mongoose';
+import { uploadOnCloudinary } from '../utils/cloudinary.js';
 
 const createTask = asyncHandler(async (req, res) => {
     try {

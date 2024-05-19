@@ -5,6 +5,7 @@ import ApiResponse from '../utils/ApiResponse.js';
 import User from '../modals/user.modal.js';
 import { Project } from '../modals/project.modal.js'; 
 import { Task } from '../modals/tasks.modal.js';
+import { uploadOnCloudinary } from '../utils/cloudinary.js';
 
 
 const createProject = asyncHandler(async (req, res) => {
@@ -189,8 +190,44 @@ const getCurrentProject = asyncHandler(async (req, res) => {
   }
 });
 
+const uploadTheme = asyncHandler(async (req, res) => {
+  try {
+    console.log('backend me aa rhe hai bhaiyaaa!')
+      const { projectId } = req.params;
+
+      if (!req.file) {
+          return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      // Fetch the project to verify the owner
+      const project = await Project.findById(projectId);
+
+      if (!project) {
+          return res.status(404).json({ error: 'Project not found' });
+      }
+      // Assuming the file is stored in req.file.path by multer
+      const localFilePath = req.file.path;
+
+      // Upload file to Cloudinary
+      const cloudinaryResponse = await uploadOnCloudinary(localFilePath);
+
+      if (!cloudinaryResponse) {
+          return res.status(500).json({ error: 'Failed to upload file to Cloudinary' });
+      }
+
+      // Update the theme in the project document
+      project.theme = cloudinaryResponse.url;
+      await project.save();
+
+      res.status(200).json({ url: cloudinaryResponse.url });
+  } catch (error) {
+      console.error('Error uploading file:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 
 
 
-export { createProject ,getCurrentProject,addTaskToProject,repoCheck,getProject};
+
+export { createProject ,getCurrentProject,addTaskToProject,repoCheck,getProject,uploadTheme};
