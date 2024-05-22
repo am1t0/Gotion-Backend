@@ -5,7 +5,7 @@ const personalTodoSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  description: {
+  time:{
     type: String,
     required: true,
   },

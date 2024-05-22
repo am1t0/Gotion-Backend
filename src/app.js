@@ -26,7 +26,7 @@ app.use(express.static('public'))
 app.use(cookieParser())
 
 
-// routes decalaration
+// routes decalaration   here mounting the specific routers to the app , this each router's will use Router.use('path',(rq,res));
 app.use("/api/v1/users", userRouter);
 
 app.use('/api/v1/todos',todosRouter);

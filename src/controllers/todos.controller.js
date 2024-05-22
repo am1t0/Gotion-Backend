@@ -6,18 +6,18 @@ import ApiResponse from '../utils/ApiResponse.js';
 
 const createTodo = asyncHandler(async (req, res) => {
   try {
-    const { title, description } = req.body;
+    const { title, time } = req.body;
     const createdBy = req.user._id; // Assuming user information is available in the request after authentication
 
     // validation - not empty
-    if (!title || !description || !createdBy) {
+    if (!title || !time || !createdBy) {
       throw new ApiError(400, "All fields are required");
     }
 
     // Create a new Todo
     const newTodo = await Todo.create({
       title,
-      description,
+      time,
       createdBy,
     });
 
