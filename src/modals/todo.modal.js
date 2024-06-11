@@ -9,7 +9,7 @@ const personalTodoSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  completed: {
+  isDone:{
     type: Boolean,
     default: false,
   },

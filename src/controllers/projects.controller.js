@@ -11,35 +11,23 @@ import { uploadOnCloudinary } from '../utils/cloudinary.js';
 const createProject = asyncHandler(async (req, res) => {
   try {
     // taking details regarding project 
-    const { name,projectOverview, projectObjectives, techStack,teamId} = req.body;
-
-    // Check if the user is the owner of the specified team
-    const team = await Team.findById(teamId);
-    if (!team || team.owner.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ error: 'Forbidden: User does not have permission' });
-    }
+    const { name,description,leaderToken} = req.body;
     const owner = req.user._id;
 
     // Create a new project document
     const newProject = new Project({
       owner,
+      leaderToken,
       name,
-      projectOverview,
-      projectObjectives,
-      techStack,
-      team: teamId,
+      description,
+      members: [{member:owner}],  // 'owner intially as member'
       announcements: [],
       tasks: [],
       repoInitialized:true,
     });
-    console.log('Project is ',projectOverview);
 
     // Save the new project to the database
     const savedProject = await newProject.save();
-
-    // adding the project into it's team
-    team.projects.push(savedProject._id);
-    await team.save();
 
     return res.status(200).json(new ApiResponse(200,savedProject, 'Projects created successfully'));
 
@@ -226,8 +214,108 @@ const uploadTheme = asyncHandler(async (req, res) => {
   }
 });
 
+// Get Teams for User
+const getProjectsForUser = asyncHandler( async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const projects = await Project.find({
+      $or: [
+        { owner: userId }, // The user is the owner
+        { 
+          members: {
+            $elemMatch: {
+              member: userId,
+              isAccepted: true
+            }
+          }
+        } // The user is a member and has accepted the invitation
+      ]
+    });
+
+    return res.status(200).json(new ApiResponse(200, projects, 'projects retrieved successfully'));
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Get all member's details from team 
+const getAllmembers = asyncHandler(async (req, res) => {
+  try {
+    const { projectId } = req.params;
+
+    const project = await Project.findById(projectId);
+
+    if (!project) {
+      throw new ApiError(404, 'Team not found');
+    }
+
+    // Fetch details of all members in the team
+    const membersPromises = project.members.map(async ({ member, role }) => {
+      const user = await User.findById(member);
+      if (!user) {
+        throw new ApiError(404, `User with ID ${member} not found`);
+      }
+
+      const { password, refreshToken, ...userData } = user.toObject(); // Convert Mongoose document to plain object
+      return { ...userData, role }; // Include the role in the returned data
+    });
+
+    const members = await Promise.all(membersPromises);
+
+    return res.status(200).json(new ApiResponse(200, members, 'Project members fetched successfully'));
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+const addMemberToProject = asyncHandler(async (req, res) => {
+  try {
+    const { projectId, username } = req.body;
+    // Check if the team exists
+    const project = await Project.findById(projectId);
+    if (!project) {
+      throw new ApiError(404, 'Team not found');
+    }
+
+    // Check if the user is the owner of the team
+    if (project.owner.toString() !== req.user._id.toString()) {
+      throw new ApiError(403, 'You do not have permission to add members to this team');
+    }
+
+    // Check if the member user exists
+    const memberUser = await User.findOne({ username });
+    if (!memberUser) {
+      throw new ApiError(404, 'Member user not found');
+    }
+
+    // Check if the member is already a part of the team
+    const isMemberExists = project.members.some(member => member.member.toString() === memberUser._id.toString());
+    if (isMemberExists) {
+      throw new ApiError(400, 'Member is already part of the team');
+    }
+
+    // Add the member to the team with default role
+    project.members.push({ member: memberUser._id });
+
+    await project.save();
+    
+    memberUser.isAccepted = false;
+
+    return res.status(200).json(new ApiResponse(200, memberUser, 'Member added to the team successfully'));
+  } catch (error) {
+    console.error(error);
+
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 
 
-
-export { createProject ,getCurrentProject,addTaskToProject,repoCheck,getProject,uploadTheme};
+export { createProject ,addMemberToProject,getProjectsForUser,getAllmembers, getCurrentProject,addTaskToProject,repoCheck,getProject,uploadTheme};

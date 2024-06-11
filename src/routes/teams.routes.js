@@ -1,6 +1,6 @@
 import {Router } from "express";
 import { veryfyJWT } from "../middlewares/auth.middleware.js";
-import { createTeam, addMemberToTeam ,removeMemberFromTeam,getTeamsForUser, updateTeam, getProjects, deleteTeam,getAllmembers,getCurrentTeam} from "../controllers/teams.controller.js";
+import { createTeam,setRoleForMember, addMemberToTeam ,removeMemberFromTeam,getTeamsForUser, updateTeam, getProjects, deleteTeam,getAllmembers,getCurrentTeam} from "../controllers/teams.controller.js";
 
 const router = Router();
 
@@ -21,5 +21,7 @@ router.route("/remove/:teamId").delete(veryfyJWT,deleteTeam);
 router.route("/members/:teamId").get(veryfyJWT,getAllmembers);
 
 router.route("/currTeam/:teamId").get(veryfyJWT, getCurrentTeam);
+
+router.route("/setRole").post(veryfyJWT,setRoleForMember)
 
 export default router

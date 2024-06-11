@@ -142,7 +142,37 @@ const deleteTodo = async (req, res) => {
   }
 };
 
+const markTodoAsDoneUndone = async (req, res) => {
+  try {
+    const todoId = req.params.todoId;
 
-export { createTodo ,getTodosByUser,updateTodo,deleteTodo,getTodo };
+    // Check if the todo exists and is associated with the authenticated user
+    const todoToUpdate = await Todo.findById(todoId);
+
+    if (!todoToUpdate) {
+      throw new ApiError(404, 'Todo not found');
+    }
+
+    // Ensure that todoToUpdate is a Mongoose model instance
+    if (!(todoToUpdate instanceof Todo)) {
+      throw new ApiError(500, 'Internal Server Error: Invalid todoToUpdate object');
+    }
+
+    // Update the isDone attribute to true
+    todoToUpdate.isDone = !todoToUpdate.isDone;
+    await todoToUpdate.save();
+
+    return res.status(200).json(todoToUpdate); // Return the updated todo
+  } catch (error) {
+    console.error(error);
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+
+export { createTodo ,getTodosByUser,updateTodo,deleteTodo,getTodo ,markTodoAsDoneUndone};
 
 

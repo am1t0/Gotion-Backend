@@ -15,8 +15,15 @@ const teamSchema = new mongoose.Schema({
     required: true,
   },
   members: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    member: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    role: {
+      type: String,
+      default: null,
+    },
   }],
   projects: [{
     type: mongoose.Schema.Types.ObjectId,

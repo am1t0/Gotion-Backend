@@ -10,6 +10,8 @@ import todosRouter from './routes/todos.routes.js'
 import teamsRouter from './routes/teams.routes.js'
 import projectsRouter from './routes/projects.route.js'
 import tasksRouter from './routes/tasksRouter.js'
+import reminderRouter from './routes/reminder.route.js'
+import planRouter from './routes/plans.route.js'
 
 
 const app = express();
@@ -36,6 +38,11 @@ app.use('/api/v1/teams',teamsRouter);
 app.use('/api/v1/projects',projectsRouter);
 
 app.use('/api/v1/tasks',tasksRouter);
+
+app.use('/api/v1/reminder',reminderRouter);
+
+app.use('/api/v1/plans', planRouter);
+
 
 
 export default app;

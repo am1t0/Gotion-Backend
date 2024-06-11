@@ -16,7 +16,7 @@ const createTeam =  asyncHandler(async (req, res) => {
         name,
         description,
         owner,
-        members: [owner], // Owner is initially added as a member
+        members: [{member:owner}], // Owner is initially added as a member
         projects: [], // Empty array to start with no projects
       });
   
@@ -114,9 +114,6 @@ const updateTeam = asyncHandler(async (req, res) => {
 const addMemberToTeam = asyncHandler(async (req, res) => {
   try {
     const { teamId, username } = req.body;
-
-     console.log("teamId : ",teamId);
-     console.log("username : ",username);
     // Check if the team exists
     const team = await Team.findById(teamId);
     if (!team) {
@@ -129,19 +126,23 @@ const addMemberToTeam = asyncHandler(async (req, res) => {
     }
 
     // Check if the member user exists
-    const memberUser = await User.findOne({username});
+    const memberUser = await User.findOne({ username });
     if (!memberUser) {
       throw new ApiError(404, 'Member user not found');
     }
 
     // Check if the member is already a part of the team
-    if (team.members.includes(memberUser._id)) {
+    const isMemberExists = team.members.some(member => member.member.toString() === memberUser._id.toString());
+    if (isMemberExists) {
       throw new ApiError(400, 'Member is already part of the team');
     }
 
-    // Add the member to the team
-    team.members.push(memberUser._id);
+    // Add the member to the team with default role
+    team.members.push({ member: memberUser._id });
+
     await team.save();
+    
+    memberUser.isAccepted = false;
 
     return res.status(200).json(new ApiResponse(200, memberUser, 'Member added to the team successfully'));
   } catch (error) {
@@ -178,13 +179,15 @@ const removeMemberFromTeam = asyncHandler(async(req, res) => {
     }
 
     // Check if the member is part of the team
-    if (!team.members.includes(memberId)) {
+    const isMemberInTeam = team.members.some( member=> member.member.toString() === memberId.toString());
+    console.log(isMemberInTeam,memberId);
+    if (!isMemberInTeam) {
       throw new ApiError(400, 'Member is not part of the team');
     }
 
-    // Remove the member from the team
-    team.members.pull(memberId);
-    await team.save();
+   // Remove the member from the team
+   team.members = team.members.filter(member => member.member.toString() !== memberId);
+   await team.save();
 
     return res.status(200).json(new ApiResponse(200, team, 'Member removed from the team successfully'));
   } catch (error) {
@@ -204,7 +207,7 @@ const getTeamsForUser = asyncHandler( async (req, res) => {
     const userId = req.user._id;
 
     // Find teams where the user is the owner or a member
-    const teams = await Team.find({ $or: [{ owner: userId }, { members: userId }] });
+    const teams = await Team.find({ $or: [{ owner: userId }, { 'members.member': userId }] });
 
     return res.status(200).json(new ApiResponse(200, teams, 'Teams retrieved successfully'));
   } catch (error) {
@@ -214,35 +217,36 @@ const getTeamsForUser = asyncHandler( async (req, res) => {
 });
 
 // Get all member's details from team 
-const getAllmembers = asyncHandler( async (req,res) => {
-  try{
-         const {teamId} = req.params;
+const getAllmembers = asyncHandler(async (req, res) => {
+  try {
+    const { teamId } = req.params;
 
-         const team = await Team.findById(teamId);
+    const team = await Team.findById(teamId);
 
-         
-         if (!team) {
+    if (!team) {
       throw new ApiError(404, 'Team not found');
     }
-    
-    // now team members will be present as array containing id's of them
-    const membersPromises =  await team.members.map(async (memberId)=>{ 
-        const user = await  User.findById(memberId);
 
-        const { password, refreshToken, ...userData } = user.toObject(); // Convert Mongoose document to plain object
-        return userData;
-    })
+    // Fetch details of all members in the team
+    const membersPromises = team.members.map(async ({ member, role }) => {
+      const user = await User.findById(member);
+      if (!user) {
+        throw new ApiError(404, `User with ID ${member} not found`);
+      }
+
+      const { password, refreshToken, ...userData } = user.toObject(); // Convert Mongoose document to plain object
+      return { ...userData, role }; // Include the role in the returned data
+    });
 
     const members = await Promise.all(membersPromises);
 
-    return res.status(200).json(new ApiResponse(200,members, "Team members fetched successfully"));
-    
-   }
-   catch(error){
+    return res.status(200).json(new ApiResponse(200, members, 'Team members fetched successfully'));
+  } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'Internal Server Error' });
-   }
-})
+  }
+});
+
 
 const getCurrentTeam = asyncHandler(async (req, res) => {
   try {
@@ -263,7 +267,41 @@ const getCurrentTeam = asyncHandler(async (req, res) => {
   }
 });
 
+// Set role for a team member
+const setRoleForMember = asyncHandler(async (req, res) => {
+  try {
+    const { teamId, memberId, role } = req.body;
+
+    // Check if the team exists
+    const team = await Team.findById(teamId);
+    if (!team) {
+      throw new ApiError(404, 'Team not found');
+    }
+
+    // Check if the user is the owner of the team
+    if (team.owner.toString() !== req.user._id.toString()) {
+      throw new ApiError(403, 'You do not have permission to set roles in this team');
+    }
+
+    // Find the member in the team's members array
+    const member = team.members.find(member => member.member.toString() === memberId);
+    if (!member) {
+      throw new ApiError(404, 'Member not found in the team');
+    }
+
+    // Update the member's role
+    member.role = role;
+    await team.save();
+
+    return res.status(200).json(new ApiResponse(200, member, 'Role assigned to the member successfully'));
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 
-export {createTeam,addMemberToTeam ,getCurrentTeam,removeMemberFromTeam ,getTeamsForUser,updateTeam,getProjects,deleteTeam,getAllmembers};
+
+
+export {createTeam,addMemberToTeam ,getCurrentTeam,removeMemberFromTeam ,getTeamsForUser,updateTeam,getProjects,deleteTeam,getAllmembers,setRoleForMember};
   

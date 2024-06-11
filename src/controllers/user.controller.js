@@ -24,16 +24,11 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
 const registerUser = asyncHandler(async (req, res) => {
     // get user details from frontend
-    const { fullname, email, skills, username, password ,gitToken } = req.body;
+    const { fullname, email, skills, githubData,username, password ,gitToken } = req.body;
    
-
-    // validation - not empty
-    if(skills.length==0)
-    throw new ApiError(400, "All fields are required");
-
     
     if (
-        [fullname, email, username, password,gitToken].some((field) =>
+        [fullname, email, password,gitToken,username].some((field) =>
             field?.trim() === "")
     ) {
         throw new ApiError(400, "All fields are required");
@@ -41,27 +36,24 @@ const registerUser = asyncHandler(async (req, res) => {
 
     // check if user already exists: username , email
     const existedUser = await User.findOne({
-        $or: [{ username }, { email }]
+        $or: [{ username}, { email }]
     })
     if (existedUser) {
         throw new ApiError(409, "User with this email or username already exists")
     }
 
-    // create user object - create entry in db
-    console.log('skills of this guy are : '+ skills);
 
     const user = await User.create({
         fullname,
+        username,
         email,
-        skills,
         password,
-        username: username.toLowerCase(),
+        githubData,
         gitToken
     })
 
     // add refresh token
     const {accessToken} = await generateAccessAndRefreshTokens(user._id);
-    console.log("This is accessToken :",accessToken);
 
     // remove password and refresh token from response and
     // check user created or not 
@@ -312,6 +304,41 @@ const uploadPhoto = asyncHandler(async (req,res) => {
     }
 })
 
+const getProfileDetail = asyncHandler(async (req, res) => {
+    try {
+      // Fetch the username from the URL parameters
+      const username = req.params.username;
+  
+      // Query the database for the user details by username
+      const user = await User.findOne({ username });
+  
+      // If user not found, return a 404 error
+      if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+      }
+  
+      // If user found, return the entire user object
+      res.status(200).json(user);
+    } catch (error) {
+      // Handle errors
+      res.status(500);
+      throw new Error('Server Error');
+    }
+  });
+
+  //get all users : for searching purpose
+  const getAllUsers = asyncHandler(async (req, res) => {
+    try {
+        const query = req.query.q || ''; // Get search query from request
+        const users = await User.find({
+          username: { $regex: query, $options: 'i' } // Case-insensitive search
+        });
+        res.status(200).json(users);
+      } catch (error) {
+        res.status(500).json({ message: error.message });
+      }
+  });
 
 
-export { registerUser, updateUser,loginUser, logoutUser,refreshAccessToken ,getUserData,getGitToken,uploadPhoto}
+export { registerUser,getAllUsers, updateUser,loginUser,getProfileDetail, logoutUser,refreshAccessToken ,getUserData,getGitToken,uploadPhoto}

@@ -10,16 +10,8 @@ const projectSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  projectOverview: {
+  description:{
     type: String,
-    required: true,
-  },
-  projectObjectives:{
-    type: [String], 
-    required: true,
-  },
-  techStack:{
-    type: [String], 
     required: true,
   },
   repo: {
@@ -32,6 +24,22 @@ const projectSchema = new mongoose.Schema({
         required: false,
       },
   },
+  members: [{
+    member: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    role: {
+      type: String,
+      default: null,
+    },
+    isAccepted:{
+      type:Boolean,
+      default:false
+    }
+  }],
+
   repoInitialized: {
     type: Boolean,
     default: false,
@@ -48,11 +56,7 @@ const projectSchema = new mongoose.Schema({
   theme:{
     type: String
   },
-  team: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Team",
-  },
- 
+
 }, { timestamps: true });
 
 const Project = mongoose.model("Project", projectSchema);
