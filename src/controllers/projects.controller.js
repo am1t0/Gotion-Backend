@@ -252,14 +252,14 @@ const getAllmembers = asyncHandler(async (req, res) => {
     }
 
     // Fetch details of all members in the team
-    const membersPromises = project.members.map(async ({ member, role }) => {
+    const membersPromises = project.members.map(async ({ member, role,isAccepted }) => {
       const user = await User.findById(member);
       if (!user) {
         throw new ApiError(404, `User with ID ${member} not found`);
       }
 
       const { password, refreshToken, ...userData } = user.toObject(); // Convert Mongoose document to plain object
-      return { ...userData, role }; // Include the role in the returned data
+      return { ...userData, role,isAccepted }; // Include the role in the returned data
     });
 
     const members = await Promise.all(membersPromises);
@@ -271,7 +271,7 @@ const getAllmembers = asyncHandler(async (req, res) => {
   }
 });
 
-const addMemberToProject = asyncHandler(async (req, res) => {
+const invitationToUser = asyncHandler(async (req, res) => {
   try {
     const { projectId, username } = req.body;
     // Check if the team exists
@@ -316,6 +316,77 @@ const addMemberToProject = asyncHandler(async (req, res) => {
   }
 });
 
+const addMemberToProject = asyncHandler(async (req, res) => {
+  const { owner, repoName} = req.body;
+
+  const userId = req.user._id
+  try {
+      // Find the project by repo owner and repoName
+      const project = await Project.findOne({
+          'repo.owner': owner,
+          'repo.repoName': repoName
+      });
+
+      if (!project) {
+          res.status(404);
+          throw new Error('Project not found');
+      }
+
+      // Find the member in the project's members array and update isAccepted to true
+      const member = project.members.find(m => m.member.toString() === userId.toString());
+
+      if (!member) {
+          res.status(404);
+          throw new Error('Member not found in the project');
+      }
+
+      member.isAccepted = true;
+
+      await project.save();
+
+      res.status(200).json({ message: 'Member accepted successfully' });
+  } catch (error) {
+      res.status(500);
+      throw new Error(error.message);
+  }
+});
 
 
-export { createProject ,addMemberToProject,getProjectsForUser,getAllmembers, getCurrentProject,addTaskToProject,repoCheck,getProject,uploadTheme};
+const removeAfterDeclination = asyncHandler(async (req,res)=>{
+  const { owner, repoName } = req.body;
+  const userId = req.user._id;
+
+  try {
+      // Find the project by repo owner and repoName
+      const project = await Project.findOne({
+          'repo.owner': owner,
+          'repo.repoName': repoName
+      });
+
+      if (!project) {
+          res.status(404);
+          throw new Error('Project not found');
+      }
+
+      // Find the member in the project's members array
+      const memberIndex = project.members.findIndex(m => m.member.toString() === userId.toString());
+
+      if (memberIndex === -1) {
+          res.status(404);
+          throw new Error('Member not found in the project');
+      }
+
+      // Remove the member from the array
+      project.members.splice(memberIndex, 1);
+
+      // Save the updated project
+      await project.save();
+
+      res.status(200).json({ message: 'Member removed successfully' });
+  } catch (error) {
+      res.status(500);
+      throw new Error(error.message);
+  }
+})
+
+export { createProject ,removeAfterDeclination,addMemberToProject,invitationToUser,getProjectsForUser,getAllmembers, getCurrentProject,addTaskToProject,repoCheck,getProject,uploadTheme};
