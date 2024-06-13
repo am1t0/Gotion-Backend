@@ -389,4 +389,83 @@ const removeAfterDeclination = asyncHandler(async (req,res)=>{
   }
 })
 
-export { createProject ,removeAfterDeclination,addMemberToProject,invitationToUser,getProjectsForUser,getAllmembers, getCurrentProject,addTaskToProject,repoCheck,getProject,uploadTheme};
+// Remove Member from Team
+const removeMemberFromProject = asyncHandler(async(req, res) => {
+  try {
+    const { projectId, memberId } = req.body;
+
+    // Check if the team exists
+    const project = await Project.findById(projectId);
+    if (!project) {
+      throw new ApiError(404, 'Project not found');
+    }
+
+    // Check if the user is the owner of the team
+    if (project.owner.toString() !== req.user._id.toString()) {
+      throw new ApiError(403, 'You do not have permission to remove members from this team');
+    }
+
+    // Check if the member user exists
+    const memberUser = await User.findById(memberId);
+    if (!memberUser) {
+      throw new ApiError(404, 'Member user not found');
+    }
+
+    // Check if the member is part of the team
+    const isMemberInTeam = project.members.some( member=> member.member.toString() === memberId.toString());
+    console.log(isMemberInTeam,memberId);
+    if (!isMemberInTeam) {
+      throw new ApiError(400, 'Member is not part of the team');
+    }
+
+   // Remove the member from the team
+   project.members = project.members.filter(member => member.member.toString() !== memberId);
+   await project.save();
+
+    return res.status(200).json(new ApiResponse(200, project, 'Member removed from the team successfully'));
+  } catch (error) {
+    console.error(error);
+
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Set role for a team member
+const setRoleForMember = asyncHandler(async (req, res) => {
+  try {
+    const { projectId, memberId, role } = req.body;
+
+    // Check if the team exists
+    const project = await Project.findById(projectId);
+    if (!project) {
+      throw new ApiError(404, 'Team not found');
+    }
+
+    // Check if the user is the owner of the team
+    if (project.owner.toString() !== req.user._id.toString()) {
+      throw new ApiError(403, 'You do not have permission to set roles in this team');
+    }
+
+    // Find the member in the team's members array
+    const member = project.members.find(member => member.member.toString() === memberId);
+    if (!member) {
+      throw new ApiError(404, 'Member not found in the team');
+    }
+
+    // Update the member's role
+    member.role = role;
+    await project.save();
+
+    return res.status(200).json(new ApiResponse(200, member, 'Role assigned to the member successfully'));
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+export { createProject ,removeMemberFromProject,setRoleForMember,removeAfterDeclination,addMemberToProject,invitationToUser,getProjectsForUser,getAllmembers, getCurrentProject,addTaskToProject,repoCheck,getProject,uploadTheme};

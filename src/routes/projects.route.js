@@ -1,7 +1,7 @@
 import {Router } from "express";
 import { upload } from "../middlewares/multer.middleware.js";
 import { veryfyJWT } from "../middlewares/auth.middleware.js";
-import {createProject,removeAfterDeclination,addMemberToProject,invitationToUser,addTaskToProject,getAllmembers,getProjectsForUser , repoCheck, getProject, getCurrentProject,uploadTheme} from "../controllers/projects.controller.js"
+import {createProject,removeMemberFromProject,removeAfterDeclination,setRoleForMember,addMemberToProject,invitationToUser,addTaskToProject,getAllmembers,getProjectsForUser , repoCheck, getProject, getCurrentProject,uploadTheme} from "../controllers/projects.controller.js"
 
 
 const router = Router();
@@ -16,9 +16,13 @@ router.route("/projects-for-user").get(veryfyJWT,getProjectsForUser)
 
 router.route('/add-members').post(veryfyJWT,invitationToUser)
 
+router.route('/remove-member').delete(veryfyJWT,removeMemberFromProject)
+
 router.route('/member-accepted').post(veryfyJWT,addMemberToProject)
 
 router.route('/member-declined').delete(veryfyJWT,removeAfterDeclination)
+
+router.route('/setRole').post(veryfyJWT,setRoleForMember)
 
 router.route('/members/:projectId').get(veryfyJWT,getAllmembers)
 
